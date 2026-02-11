@@ -62,19 +62,28 @@ def get_user(id):
     except Exception as e:
         return make_response(jsonify({"message": "Error fetching user", "error": str(e)}), 500)
 
-# update user by id
 @app.route('/users/<int:id>', methods=['PUT'])
-def update_user(id):    
+def update_user(id):
     try:
-        user = User.query.filter_by(id=id).first()
-        if user:
-            data = request.get_json()
-            user.name = data['name']
-            user.email = data['email']
-            db.session.commit()
-            return make_response(jsonify({"message": "User updated successfully"}), 200)
+        user = User.query.get(id)
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+            
+        data = request.get_json()
+        
+        # Cập nhật các trường dữ liệu
+        user.name = data.get('name', user.name)
+        user.email = data.get('email', user.email)
+        
+        # QUAN TRỌNG: Kiểm tra xem có mật khẩu mới gửi lên không
+        if 'password' in data:
+            user.password = data.get('password')
+        
+        db.session.commit() # Lưu thay đổi vào Postgres
+        return jsonify({"message": "Updated successfully"}), 200
     except Exception as e:
-        return make_response(jsonify({"message": "Error updating user", "error": str(e)}), 500)
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 #delete user by id
 @app.route('/users/<int:id>', methods=['DELETE'])

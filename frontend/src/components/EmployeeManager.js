@@ -1,12 +1,14 @@
 import React, {useState, useEffect} from "react";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 import { Container, Table, Button, Form, Card, Navbar, Row, Col } from 'react-bootstrap';
 function EmployeeManager() {
+  const navigate = useNavigate();
   const[employees, setEmployees] = useState([]);
   const[name, setName] = useState("");
   const[email, setEmail] = useState("");
   const[password, setPassword] = useState("");
-  
+  const[editingId, setEditingId] = useState(null);
 
   const fetchEmployees = async () => {
     try {
@@ -38,11 +40,37 @@ function EmployeeManager() {
         const errorMsg = error.response?.data?.message || "Lỗi không xác định";
         alert("Không thể thêm: " + errorMsg);
     }
-};
+  };
 
   const handleDelete = async (id) => {
     await axios.delete(`http://localhost:4000/users/${id}`);
     fetchEmployees();
+  };
+
+  const startEdit = (emp) => {
+    setName(emp.name);
+    setEmail(emp.email);
+    setPassword(""); // Không hiển thị mật khẩu cũ
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault(); // Chặn load lại trang
+    try {
+        await axios.put(`http://localhost:4000/users/${editingId}`, { 
+            name, 
+            email, 
+            password // Hoặc lấy password cũ
+        });
+        
+        // Reset trạng thái sau khi sửa xong
+        setName("");
+        setEmail("");
+        setPassword("");
+        fetchEmployees(); // Tải lại bảng
+        alert("Cập nhật thành công!");
+    } catch (error) {
+        console.error("Lỗi khi sửa:", error);
+    }
   };
 
   return (
@@ -90,6 +118,7 @@ function EmployeeManager() {
                       <th>Họ và Tên</th>
                       <th>Email</th>
                       <th className="text-center">Thao tác</th>
+                      <th className="text-center">Chỉnh sửa thông tin</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -101,6 +130,11 @@ function EmployeeManager() {
                         <td className="text-center">
                           <Button variant="outline-danger" size="sm" onClick={() => handleDelete(emp.id)}>
                             Xóa
+                          </Button>
+                        </td>
+                        <td className="text-center">
+                          <Button variant="outline-primary" size="sm" onClick={() => navigate(`/users/${emp.id}`)}>
+                            Sửa
                           </Button>
                         </td>
                       </tr>
