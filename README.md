@@ -26,7 +26,7 @@ Bạn không cần cài đặt Python hay Node.js thủ công. Hãy mở Termina
 
 ```bash
 # Clone dự án từ GitHub
-git clone [https://github.com/tasdus-117/Employee-Management-System.git](https://github.com/tasdus-117/Employee-Management-System.git)
+git clone https://github.com/tasdus-117/Employee_Management_System
 
 # Khởi chạy hệ thống bằng Docker
 docker-compose up --build
