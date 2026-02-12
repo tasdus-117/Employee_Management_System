@@ -23,10 +23,27 @@ function EditEmployee() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    // Gửi lệnh PUT để cập nhật
-    await axios.put(`http://localhost:4000/users/${id}`, { name, email });
-    navigate("/dashboard"); // Xong thì về lại bảng chính
-  };
+    
+    // 1. Lấy token từ bộ nhớ trình duyệt
+    const token = localStorage.getItem("token"); 
+
+    try {
+        // 2. Gửi kèm token trong cấu hình headers
+        await axios.put(`http://localhost:4000/users/${id}`, 
+            { name, email }, // Data gửi đi
+            {
+                headers: {
+                    Authorization: `Bearer ${token}` // Chìa khóa ở đây!
+                }
+            }
+        );
+        
+        navigate("/dashboard");
+    } catch (error) {
+        console.error("Cập nhật thất bại:", error.response?.data || error.message);
+        // Có thể thông báo cho người dùng là "Phiên đăng nhập hết hạn"
+    }
+};
 
   return (
     <Container className="mt-4">
