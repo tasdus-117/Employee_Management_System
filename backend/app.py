@@ -10,7 +10,7 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DB_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 bcrypt = Bcrypt(app)
-app.config['JWT_SECRET'] = 'deptrailoitaiai'
+app.config['JWT_SECRET_KEY'] = 'deptrailoitaiai'
 jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
