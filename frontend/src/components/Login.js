@@ -11,6 +11,7 @@ function Login({ onLoginSuccess }) {
     e.preventDefault();
     try {
       const res = await axios.post('http://localhost:4000/login', { email, password });
+      localStorage.setItem('token', res.data.access_token);
       alert(res.data.message);
       
       // Báo cho App.js biết đã đăng nhập để mở khóa Route Dashboard
