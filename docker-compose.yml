@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # --- 1. Database (Dùng thông số của bạn) ---
+  flask_db:
+    container_name: flask_db
+    image: postgres:12
+    ports: 
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=11072005
+      - POSTGRES_USER=tasdus
+      - POSTGRES_DB=employee_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U tasdus -d employee_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- 2. Backend (Chỉnh build trỏ vào my_be) ---
+  flask_app:
+    container_name: flask_app
+    build: ./backend  # Đường dẫn đến thư mục Backend của Tú
+    ports:
+      - "4000:4000"
+    environment:
+      # URL kết nối dùng tên service 'flask_db'
+      - DB_URL=postgresql://tasdus:11072005@flask_db:5432/employee_db
+    depends_on:
+      flask_db:
+        condition: service_healthy # Chỉ chạy khi DB đã thực sự sẵn sàng
+    volumes:
+      - ./backend:/app
+
+  # --- 3. Frontend (Thêm mới để chạy chung) ---
+  react_app:
+    container_name: react_app
+    build: ./frontend  # Đường dẫn đến thư mục Frontend của Tú
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - flask_app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Để tránh xung đột thư viện giữa container và máy thật
+
+volumes:
+  pgdata: {}
