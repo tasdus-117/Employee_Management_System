@@ -1,21 +1,35 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
 import { Container, Table, Button, Form, Card, Navbar, Row, Col } from 'react-bootstrap';
+
 function EmployeeManager() {
   const navigate = useNavigate();
-  const[employees, setEmployees] = useState([]);
-  const[name, setName] = useState("");
-  const[email, setEmail] = useState("");
-  const[password, setPassword] = useState("");
-  const[editingId, setEditingId] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
+  // Hàm lấy token nhanh từ ví
+  const getAuthHeader = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        navigate("/login");
+        return {};
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  // 1. Lấy danh sách nhân viên
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get("http://localhost:4000/users");
+      const res = await axios.get('http://localhost:4000/users', {
+        headers: getAuthHeader()
+      });
       setEmployees(res.data.users);
     } catch (error) {
       console.error("Error fetching employees:", error);
+      if (error.response?.status === 401) navigate("/login");
     }
   };
 
@@ -23,68 +37,52 @@ function EmployeeManager() {
     fetchEmployees();
   }, []);
 
+  // 2. Thêm nhân viên
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-        const response = await axios.post("http://localhost:4000/users", { name, email, password });
-        console.log("Thành công:", response.data);
-        setName(""); 
-        setEmail("");
-        setPassword("");
-        fetchEmployees();
+      await axios.post("http://localhost:4000/users", 
+        { name, email, password }, 
+        { headers: getAuthHeader() } // Phải có thẻ mới được thêm
+      );
+      setName(""); setEmail(""); setPassword("");
+      fetchEmployees();
+      alert("Thêm thành công!");
     } catch (error) {
-        // Log chi tiết lỗi từ server trả về
-        console.error("Mã lỗi:", error.response?.status);
-        console.error("Chi tiết lỗi từ Backend:", error.response?.data);
-        
-        const errorMsg = error.response?.data?.message || "Lỗi không xác định";
-        alert("Không thể thêm: " + errorMsg);
+      alert("Lỗi: " + (error.response?.data?.message || "Không có quyền"));
     }
   };
 
+  // 3. Xóa nhân viên
   const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:4000/users/${id}`);
-    fetchEmployees();
-  };
-
-  const startEdit = (emp) => {
-    setName(emp.name);
-    setEmail(emp.email);
-    setPassword(""); // Không hiển thị mật khẩu cũ
-  };
-
-  const handleEdit = async (e) => {
-    e.preventDefault(); // Chặn load lại trang
-    try {
-        await axios.put(`http://localhost:4000/users/${editingId}`, { 
-            name, 
-            email, 
-            password // Hoặc lấy password cũ
+    if (window.confirm("Bạn có chắc chắn muốn xóa?")) {
+      try {
+        await axios.delete(`http://localhost:4000/users/${id}`, {
+          headers: getAuthHeader() // Phải có thẻ mới được xóa
         });
-        
-        // Reset trạng thái sau khi sửa xong
-        setName("");
-        setEmail("");
-        setPassword("");
-        fetchEmployees(); // Tải lại bảng
-        alert("Cập nhật thành công!");
-    } catch (error) {
-        console.error("Lỗi khi sửa:", error);
+        fetchEmployees();
+      } catch (error) {
+        alert("Không thể xóa. Vui lòng kiểm tra quyền đăng nhập.");
+      }
     }
   };
 
   return (
     <div className="bg-light" style={{ minHeight: '100vh' }}>
-      {/* Navbar chuyên nghiệp */}
       <Navbar bg="dark" variant="dark" className="mb-4">
         <Container>
-          <Navbar.Brand href="#">Hệ Thống Quản Lý Nhân Viên</Navbar.Brand>
+          <Button variant="outline-danger" size="sm" onClick={() => {
+            localStorage.removeItem("token");
+            navigate("/login");
+          }}>
+            Đăng xuất
+          </Button>
+          <Navbar.Brand className="ms-auto">Hệ Thống Quản Lý Nhân Viên</Navbar.Brand>
         </Container>
       </Navbar>
 
       <Container>
         <Row>
-          {/* Cột bên trái: Form thêm mới */}
           <Col md={4}>
             <Card className="shadow-sm">
               <Card.Body>
@@ -92,11 +90,15 @@ function EmployeeManager() {
                 <Form onSubmit={handleAdd}>
                   <Form.Group className="mb-3">
                     <Form.Label>Họ và tên</Form.Label>
-                    <Form.Control type="text" placeholder="Nhập tên..." value={name} onChange={e => setName(e.target.value)} required />
+                    <Form.Control type="text" value={name} onChange={e => setName(e.target.value)} required />
                   </Form.Group>
                   <Form.Group className="mb-3">
                     <Form.Label>Email</Form.Label>
-                    <Form.Control type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                    <Form.Control type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Mật khẩu tạm thời</Form.Label>
+                    <Form.Control type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                   </Form.Group>
                   <Button variant="primary" type="submit" className="w-100">
                     + Thêm vào danh sách
@@ -106,7 +108,6 @@ function EmployeeManager() {
             </Card>
           </Col>
 
-          {/* Cột bên phải: Bảng danh sách */}
           <Col md={8}>
             <Card className="shadow-sm">
               <Card.Body>
@@ -118,7 +119,6 @@ function EmployeeManager() {
                       <th>Họ và Tên</th>
                       <th>Email</th>
                       <th className="text-center">Thao tác</th>
-                      <th className="text-center">Chỉnh sửa thông tin</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -128,13 +128,11 @@ function EmployeeManager() {
                         <td>{emp.name}</td>
                         <td>{emp.email}</td>
                         <td className="text-center">
+                          <Button variant="outline-primary" size="sm" className="me-2" onClick={() => navigate(`/users/${emp.id}`)}>
+                            Sửa
+                          </Button>
                           <Button variant="outline-danger" size="sm" onClick={() => handleDelete(emp.id)}>
                             Xóa
-                          </Button>
-                        </td>
-                        <td className="text-center">
-                          <Button variant="outline-primary" size="sm" onClick={() => navigate(`/users/${emp.id}`)}>
-                            Sửa
                           </Button>
                         </td>
                       </tr>

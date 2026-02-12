@@ -2,12 +2,16 @@ from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from os import environ
 from flask_cors import CORS # 1. Import
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('DB_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+bcrypt = Bcrypt(app)
+app.config['JWT_SECRET'] = 'deptrailoitaiai'
+jwt = JWTManager(app)
 
 db = SQLAlchemy(app)
 
@@ -43,6 +47,7 @@ def create_user():
     except Exception as e:
         return make_response(jsonify({"message": "Error creating user", "error": str(e)}), 500)
 # get all user
+@jwt_required() # Bảo vệ route này bằng JWT
 @app.route('/users', methods=['GET'])
 def get_users():
     try:
@@ -62,6 +67,7 @@ def get_user(id):
     except Exception as e:
         return make_response(jsonify({"message": "Error fetching user", "error": str(e)}), 500)
 
+@jwt_required()
 @app.route('/users/<int:id>', methods=['PUT'])
 def update_user(id):
     try:
@@ -111,19 +117,43 @@ def register():
         return make_response(jsonify({"message": "Error registering user", "error": str(e)}), 500)
     
 # Login 
+from flask_jwt_extended import create_access_token # Đảm bảo đã import dòng này
+
 @app.route('/login', methods=['POST'])
 def login():
     try:
-        email, password_provided = request.get_json().get('email'), request.get_json().get('password')
+        # Lấy dữ liệu từ request
+        data = request.get_json()
+        email = data.get('email')
+        password_provided = data.get('password')
+
+        # Truy vấn user trong DB
         user = User.query.filter_by(email=email).first()
+
         if user:
+            # Kiểm tra mật khẩu (Sau này nên dùng bcrypt để check pass đã hash nhé Tú)
             if user.password == password_provided:
-                return make_response(jsonify({"message": "Login successful"}), 200)
+                
+                # --- PHẦN NÂNG CẤP JWT Ở ĐÂY ---
+                # Tạo thẻ thông hành dựa trên ID hoặc Email của user
+                access_token = create_access_token(identity=str(user.id))
+                
+                return make_response(jsonify({
+                    "message": "Login successful",
+                    "access_token": access_token, # Gửi token về cho React
+                    "user": {"email": user.email, "id": user.id} # Gửi thêm ít thông tin user nếu cần
+                }), 200)
+                # ------------------------------
+                
             else:
                 return make_response(jsonify({"message": "Incorrect password"}), 401)
+        
         return make_response(jsonify({"message": "User not found"}), 404)
+
     except Exception as e:  
         return make_response(jsonify({"message": "Error during login", "error": str(e)}), 500)
+
+
     
 
 
