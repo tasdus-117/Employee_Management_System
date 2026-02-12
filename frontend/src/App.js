@@ -1,12 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState } from 'react';
-import Login from './components/Login';
-import Register from './components/Register';
-import EmployeeManager from './components/EmployeeManager';
-import EditEmployee from './components/EditEmployee'; // <--- Nhớ dòng này nhé Tú!
+import Login from './pages/Login/Login'; 
+import Register from './pages/Register/Register';
+import EmployeeManager from './pages/Dashboard/EmployeeManager';
+import EditEmployee from './pages/EditEmployee/EditEmployee';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
   return (
     <Router>
