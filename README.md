@@ -15,7 +15,7 @@ Dự án quản lý nhân viên hoàn chỉnh được xây dựng với kiến 
 - **Database:** PostgreSQL 12.
 - **DevOps:** Docker, Docker Compose.
 
-## ⚙️ Hướng dẫn cài đặt và khởi chạy
+## Hướng dẫn cài đặt và khởi chạy
 
 ### 1. Yêu cầu hệ thống
 - Máy tính đã cài đặt [Docker Desktop](https://www.docker.com/products/docker-desktop/).
